@@ -13,21 +13,19 @@ import { PredictionProvider } from "@/components/providers/PredictionProvider";
 export default function HomePage() {
   return (
     <PredictionProvider>
-      <main className="container mx-auto p-4 md:p-8 max-w-3xl">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
-          Housing Price Predictor
-        </h1>
+      <main className="container mx-auto p-4 md:p-8 flex-grow">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+          <div className="md:col-span-2">
+            <PredictionForm />
+          </div>
 
-        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-          <PredictionForm />
-        </div>
+          <div className="md:col-span-3">
+            <PredictionResultDisplay />
+          </div>
 
-        <div className="bg-white shadow-md rounded-lg p-6 mb-8 min-h-[100px] flex items-center justify-center">
-          <PredictionResultDisplay />
-        </div>
-
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <PredictionHistory />
+          <div className="md:col-span-5">
+            <PredictionHistory />
+          </div>
         </div>
       </main>
     </PredictionProvider>
