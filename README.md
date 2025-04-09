@@ -62,13 +62,19 @@ npm install
 ```bash
 npx prisma generate
 npx prisma db push
+npx prisma db seed
 ```
 
-4. Start the development server:
+4. Build and start the production server:
 
 ```bash
-npm run dev
+npm run build
+npm start
 ```
+
+The application will be available at `http://localhost:3000`
+
+Note: For development, you can use `npm run dev` instead of the build and start commands.
 
 ### Running Tests
 
