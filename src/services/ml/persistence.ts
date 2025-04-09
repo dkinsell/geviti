@@ -3,8 +3,11 @@ import { NormalizationParams } from "@/types/PredictionTypes";
 import path from "path";
 import fs from "fs";
 
-// Directory for storing model files
-const MODEL_DIR = path.join(process.cwd(), "public", "model");
+// Get model path from environment variables or use default
+const MODEL_DIR = path.join(
+  process.cwd(),
+  path.dirname(process.env.ML_MODEL_PATH || "public/model/model.json"),
+);
 const MODEL_PATH = `file://${path.join(MODEL_DIR, "model.json")}`;
 const PARAMS_PATH = path.join(MODEL_DIR, "normalization.json");
 
