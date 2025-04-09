@@ -135,7 +135,6 @@ export default function PredictionForm() {
   const mutation = useMutation<PredictionResult, Error, PredictionInputSchema>({
     mutationFn: postPrediction,
     onSuccess: (data) => {
-      console.log("Prediction successful, data received:", data);
       setPredictionResult(data);
       setIsLoading(false);
       setPredictionError(null);
@@ -170,7 +169,6 @@ export default function PredictionForm() {
           Property Details
         </h2>
 
-        {/* Recent inputs dropdown */}
         {recentInputs.length > 0 && (
           <div className="mb-6 relative">
             <button

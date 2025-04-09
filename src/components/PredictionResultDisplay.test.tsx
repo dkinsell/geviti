@@ -117,8 +117,26 @@ describe("PredictionResultDisplay", () => {
 
     render(<PredictionResultDisplay />);
 
+    // Check for the main instruction text
     expect(
-      screen.getByText(/enter the house details above/i),
+      screen.getByText(
+        /enter property details in the form to calculate an estimated home price/i,
+      ),
+    ).toBeInTheDocument();
+
+    // Check for the header
+    expect(screen.getByText("Get a Price Prediction")).toBeInTheDocument();
+
+    // Check for the AI model text
+    expect(
+      screen.getByText(/our ai model is trained on local housing market data/i),
+    ).toBeInTheDocument();
+
+    // Check for the data range information
+    expect(
+      screen.getByText(
+        /based on data from properties ranging from 800-2600 sqft and 2-5 bedrooms/i,
+      ),
     ).toBeInTheDocument();
   });
 });

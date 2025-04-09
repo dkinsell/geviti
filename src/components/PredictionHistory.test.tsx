@@ -5,7 +5,6 @@ import PredictionHistory from "./PredictionHistory";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PredictionLog } from "@prisma/client";
 
-// Mock fetch function
 global.fetch = jest.fn();
 
 // Create mock prediction logs matching Prisma schema
@@ -118,7 +117,10 @@ describe("PredictionHistory", () => {
 
     renderWithQueryClient(<PredictionHistory />);
 
-    expect(screen.getByText(/loading history/i)).toBeInTheDocument();
+    // Update the text to match the exact text in the component
+    expect(
+      screen.getByText(/loading prediction history\.\.\./i),
+    ).toBeInTheDocument();
   });
 
   it("renders prediction history items when data is loaded", async () => {

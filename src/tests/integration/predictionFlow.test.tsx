@@ -7,8 +7,6 @@ import { PredictionResult } from "@/types/PredictionTypes";
 import { PredictionProvider } from "@/components/providers/PredictionProvider";
 import { PredictionLog } from "@prisma/client";
 
-// Configure Jest to suppress React act() warnings
-// This would typically go in your jest.setup.ts but we'll add it here for clarity
 beforeAll(() => {
   const originalError = console.error;
   console.error = (...args) => {
@@ -19,10 +17,8 @@ beforeAll(() => {
   };
 });
 
-// Properly type the mocked fetch
 global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
-// Create a delayed response helper to ensure loading states are visible
 const createDelayedResponse = <T,>(
   data: T,
   delayMs = 100,
@@ -39,13 +35,10 @@ const createDelayedResponse = <T,>(
 
 // Setup mock responses with appropriate delays
 const setupFetchMocks = () => {
-  // Clear previous mocks
   (global.fetch as jest.Mock).mockReset();
 
-  // Create a more robust mock implementation with delays
   (global.fetch as jest.Mock).mockImplementation(
     (url: string, options?: RequestInit) => {
-      // Handle prediction API call with delay to ensure loading state appears
       if (url === "/api/predict" && options?.method === "POST") {
         return createDelayedResponse(
           {
@@ -57,7 +50,6 @@ const setupFetchMocks = () => {
         );
       }
 
-      // Handle predictions history API call
       if (url === "/api/predictions") {
         return createDelayedResponse(
           [
@@ -75,7 +67,6 @@ const setupFetchMocks = () => {
         );
       }
 
-      // Default response for unexpected calls
       return Promise.resolve({
         ok: false,
         status: 404,
@@ -114,14 +105,20 @@ describe("Prediction Flow Integration", () => {
     const user = userEvent.setup();
     renderWithProviders();
 
-    // Initial state check
-    expect(screen.getByText(/housing price predictor/i)).toBeInTheDocument();
-    expect(screen.getByText(/enter the house details/i)).toBeInTheDocument();
+    // Initial state checks
+    expect(screen.getByText("Property Details")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /enter property details in the form to calculate an estimated home price/i,
+      ),
+    ).toBeInTheDocument();
 
     // 1. Fill the prediction form
     const squareFootageInput = screen.getByLabelText(/square footage/i);
-    const bedroomsInput = screen.getByLabelText(/bedrooms/i);
-    const submitButton = screen.getByRole("button", { name: /predict price/i });
+    const bedroomsInput = screen.getByLabelText(/number of bedrooms/i);
+    const submitButton = screen.getByRole("button", {
+      name: /predict price/i,
+    });
 
     await user.type(squareFootageInput, "1500");
     await user.type(bedroomsInput, "3");
@@ -129,7 +126,12 @@ describe("Prediction Flow Integration", () => {
     // 2. Submit the form
     await user.click(submitButton);
 
-    // 4. Wait for results to appear
+    // Wait for loading state to appear
+    expect(
+      await screen.findByText(/calculating prediction/i),
+    ).toBeInTheDocument();
+
+    // Wait for results to appear
     await waitFor(
       () => {
         const priceElements = screen.getAllByText("$250,000.00");
@@ -138,20 +140,20 @@ describe("Prediction Flow Integration", () => {
       { timeout: 3000 },
     );
 
-    // Check for confidence display
-    const confidenceElement = screen.getByText(/92.*%.*conf/i);
-    expect(confidenceElement).toBeInTheDocument();
+    // Check for confidence display - update to match the actual component output
+    await waitFor(() => {
+      expect(screen.getByText(/92\.0%/)).toBeInTheDocument();
+      expect(screen.getByText(/confidence/i)).toBeInTheDocument();
+    });
 
     // 5. Verify all API calls were made with proper type assertion
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch).toHaveBeenCalledTimes(3);
 
     // Use proper typing for the mock calls
     const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
     expect(mockFetch.mock.calls).toEqual(
       expect.arrayContaining([
-        // GET /api/predictions call (no options needed)
         ["/api/predictions"],
-        // POST /api/predict call with options
         [
           "/api/predict",
           expect.objectContaining({
@@ -162,6 +164,7 @@ describe("Prediction Flow Integration", () => {
             }),
           }),
         ],
+        ["/api/predictions"],
       ]),
     );
   });
