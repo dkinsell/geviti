@@ -4,8 +4,8 @@ import {
   PredictionInput,
   PredictionResult,
   TrainingDataItem,
-} from "@/types/PredictionTypes";
-import prisma from "@/lib/db";
+} from "../../types/PredictionTypes";
+import prisma from "../../lib/db";
 import { trainModel } from "./trainer";
 import { loadModel, saveModel } from "./persistence";
 import { predictPrice } from "./predictor";

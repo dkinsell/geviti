@@ -17,7 +17,7 @@
     "pre-build-train": "ts-node --project tsconfig.scripts.json scripts/preBuildTrain.ts"
   },
   "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "seed": "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
