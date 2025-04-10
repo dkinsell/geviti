@@ -1,8 +1,10 @@
 import { PrismaClient } from "@prisma/client";
+import mlService from "@/services/ml/mlService";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  // Clear existing training data
   await prisma.trainingData.deleteMany({});
 
   const trainingData = [
@@ -25,7 +27,19 @@ async function main() {
     console.log(`Created training record with ID: ${record.id}`);
   }
 
-  console.log(`Seeding completed successfully.`);
+  console.log(`Training data seeding completed.`);
+
+  // Train the model with the seeded data
+  console.log("Training ML model...");
+  try {
+    await mlService.trainNewModel();
+    console.log("ML model training completed successfully.");
+  } catch (error) {
+    console.error("Error training ML model:", error);
+    throw error; // Ensure deployment fails if model training fails
+  }
+
+  console.log(`Seeding and model training completed successfully.`);
 }
 
 main()

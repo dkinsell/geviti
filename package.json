@@ -11,7 +11,9 @@
     "train-model": "ts-node -r tsconfig-paths/register --project tsconfig.scripts.json src/scripts/trainModel.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "vercel-build": "prisma generate && prisma db push && npm run build",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
