@@ -1,58 +1,138 @@
-import * as tf from "@tensorflow/tfjs-node";
-import prisma from "@/lib/db";
+import * as tfBrowser from "@tensorflow/tfjs";
 import {
+  NormalizationParams,
   PredictionInput,
   PredictionResult,
   TrainingDataItem,
-  NormalizationParams,
 } from "@/types/PredictionTypes";
+import prisma from "@/lib/db";
 import { trainModel } from "./trainer";
 import { loadModel, saveModel } from "./persistence";
 import { predictPrice } from "./predictor";
 
-/**
- * Main service for handling ML operations
- */
+const IS_SERVER = typeof window === "undefined";
+
+const tfInstancePromise: Promise<typeof tfBrowser> = (async () => {
+  if (IS_SERVER) {
+    try {
+      const tfNode = await import("@tensorflow/tfjs-node");
+      console.log("MLService: Loaded @tensorflow/tfjs-node");
+      return tfNode as unknown as typeof tfBrowser;
+    } catch (e) {
+      console.error("MLService: Failed to load @tensorflow/tfjs-node:", e);
+      throw e;
+    }
+  } else {
+    try {
+      // Dynamically import browser backends
+      await import("@tensorflow/tfjs-backend-webgl");
+      await import("@tensorflow/tfjs-backend-cpu");
+      console.log("MLService: Loaded browser TFJS backends (WebGL, CPU)");
+      return tfBrowser;
+    } catch (e) {
+      console.error("MLService: Failed to load browser backends:", e);
+      throw e;
+    }
+  }
+})();
+
 class MLService {
-  private model: tf.LayersModel | null = null;
+  private model: tfBrowser.LayersModel | null = null;
   private normalizationParams: NormalizationParams | null = null;
   private isInitialized = false;
+  private tfInstancePromise: Promise<typeof tfBrowser>;
+  private backendInitialized: Promise<void> | null = null;
 
-  /**
-   * Initializes the ML service, loading or training the model
-   */
+  constructor() {
+    this.tfInstancePromise = tfInstancePromise;
+  }
+
+  private async initializeBackend(): Promise<void> {
+    if (!this.backendInitialized) {
+      this.backendInitialized = (async () => {
+        const tf = await this.tfInstancePromise;
+        try {
+          if (IS_SERVER) {
+            console.log(
+              "MLService: TensorFlow.js backend configured for Node.js (CPU)",
+            );
+          } else {
+            await tf.setBackend("webgl");
+            console.log("MLService: TensorFlow.js backend set to WebGL");
+          }
+        } catch (e) {
+          console.warn(
+            "MLService: WebGL backend failed, falling back to CPU",
+            e,
+          );
+          try {
+            if (!IS_SERVER) {
+              await tf.setBackend("cpu");
+              console.log(
+                "MLService: TensorFlow.js backend set to CPU (Browser Fallback)",
+              );
+            }
+          } catch (cpuError) {
+            console.error("MLService: Error setting CPU backend:", cpuError);
+            throw new Error("Failed to initialize TensorFlow.js backend.");
+          }
+        }
+      })();
+    }
+    return this.backendInitialized;
+  }
+
   async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+
+    console.log("MLService: Initializing...");
+    await this.initializeBackend();
+
     const loaded = await loadModel();
 
     if (loaded) {
       this.model = loaded.model;
       this.normalizationParams = loaded.normalizationParams;
       this.isInitialized = true;
-      console.log("Model loaded successfully");
+      console.log("MLService: Model loaded successfully from persistence.");
     } else {
-      await this.trainNewModel();
+      console.log(
+        "MLService: No saved model found, attempting to train a new one.",
+      );
+      await this.initializeBackend();
+      if (IS_SERVER) {
+        await this.trainNewModel();
+      } else {
+        console.warn(
+          "MLService: Skipping initial training in browser environment.",
+        );
+      }
     }
   }
 
-  /**
-   * Trains a new model using data from the database
-   */
   async trainNewModel(): Promise<void> {
+    await this.initializeBackend();
+    const tf = await this.tfInstancePromise;
+
+    if (!IS_SERVER) {
+      console.warn(
+        "MLService: Model training requested from browser environment. Aborting.",
+      );
+      throw new Error("Training from browser is not supported in this setup.");
+    }
+
     try {
       const trainingData = await prisma.trainingData.findMany();
-
-      if (trainingData.length === 0) {
-        throw new Error("No training data available");
-      }
-
-      console.log(`Training model with ${trainingData.length} data points...`);
+      if (trainingData.length === 0)
+        throw new Error("No training data available in DB");
+      console.log(
+        `MLService: Training model with ${trainingData.length} data points...`,
+      );
 
       const result = await trainModel(
+        tf,
         trainingData as unknown as TrainingDataItem[],
-        {
-          epochs: 200,
-          batchSize: 4,
-        },
+        { epochs: 200, batchSize: 4 },
       );
 
       await saveModel(result.model, result.normalizationParams);
@@ -60,38 +140,50 @@ class MLService {
       this.model = result.model;
       this.normalizationParams = result.normalizationParams;
       this.isInitialized = true;
-
-      console.log(`Model trained successfully with loss: ${result.loss}`);
+      console.log(
+        `MLService: Model trained successfully with loss: ${result.loss}`,
+      );
     } catch (error) {
-      console.error("Error training model:", error);
+      console.error("MLService: Error training model:", error);
+      this.isInitialized = false;
       throw error;
     }
   }
 
-  /**
-   * Makes a housing price prediction
-   */
   async predict(input: PredictionInput): Promise<PredictionResult> {
-    if (!this.isInitialized) {
+    if (!this.isInitialized || !this.model || !this.normalizationParams) {
+      console.log("MLService: Not initialized. Attempting initialization...");
       await this.initialize();
-    }
-
-    if (!this.model || !this.normalizationParams) {
-      throw new Error("Model not initialized");
+      if (!this.isInitialized || !this.model || !this.normalizationParams) {
+        console.error(
+          "MLService: Prediction failed - initialization failed or model/params still null.",
+        );
+        throw new Error("Model not available for prediction.");
+      }
+      console.log("MLService: Initialization complete after check.");
     }
 
     this.validateInput(input);
+    const tf = await this.tfInstancePromise;
 
-    const result = predictPrice(this.model, input, this.normalizationParams);
+    const result = predictPrice(
+      tf,
+      this.model!,
+      input,
+      this.normalizationParams!,
+    );
 
-    await this.logPrediction(input, result);
+    if (IS_SERVER) {
+      await this.logPrediction(input, result);
+    } else {
+      console.log(
+        "MLService: Prediction made in browser, skipping server-side logging.",
+      );
+    }
 
     return result;
   }
 
-  /**
-   * Validates prediction input
-   */
   private validateInput(input: PredictionInput): void {
     if (
       typeof input.squareFootage !== "number" ||
@@ -111,13 +203,16 @@ class MLService {
     }
   }
 
-  /**
-   * Logs prediction to database
-   */
   private async logPrediction(
     input: PredictionInput,
     result: PredictionResult,
   ): Promise<void> {
+    if (!IS_SERVER) {
+      console.warn(
+        "Attempted to log prediction from non-server environment. Skipping.",
+      );
+      return;
+    }
     try {
       await prisma.predictionLog.create({
         data: {
@@ -132,21 +227,16 @@ class MLService {
     }
   }
 
-  /**
-   * Gets the singleton instance of the ML service
-   */
+  private static instance: MLService | null = null;
+
   static getInstance(): MLService {
-    if (!global._mlServiceInstance) {
-      global._mlServiceInstance = new MLService();
+    if (MLService.instance === null) {
+      console.log("Creating new MLService instance.");
+      MLService.instance = new MLService();
     }
-    return global._mlServiceInstance;
+    return MLService.instance;
   }
 }
 
-// Add to global in development to prevent multiple instances during hot reload
-declare global {
-  // eslint-disable-next-line no-var
-  var _mlServiceInstance: MLService | undefined;
-}
-
-export default MLService.getInstance();
+const mlServiceInstance = MLService.getInstance();
+export default mlServiceInstance;

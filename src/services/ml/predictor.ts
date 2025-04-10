@@ -1,4 +1,4 @@
-import * as tf from "@tensorflow/tfjs-node";
+import type * as tfTypes from "@tensorflow/tfjs";
 import {
   PredictionInput,
   PredictionResult,
@@ -10,17 +10,20 @@ import { normalizeFeatures, denormalizePrice } from "./preprocessor";
  * Makes a housing price prediction based on input features
  */
 export function predictPrice(
-  model: tf.LayersModel,
+  tf: typeof tfTypes,
+  model: tfTypes.LayersModel,
   input: PredictionInput,
   normalizationParams: NormalizationParams,
 ): PredictionResult {
   const normalizedInput = normalizeFeatures(input, normalizationParams);
 
-  const inputTensor = tf.tensor2d([
-    [normalizedInput.squareFootage, normalizedInput.bedrooms],
-  ]);
+  const inputTensor = tf.tidy(() => {
+    return tf.tensor2d([
+      [normalizedInput.squareFootage, normalizedInput.bedrooms],
+    ]);
+  });
 
-  const prediction = model.predict(inputTensor) as tf.Tensor;
+  const prediction = model.predict(inputTensor) as tfTypes.Tensor;
   const normalizedPrice = prediction.dataSync()[0];
 
   const price = denormalizePrice(normalizedPrice, normalizationParams);
@@ -39,7 +42,6 @@ export function predictPrice(
 
   const confidence = (squareFtConfidence + bedroomsConfidence) / 2;
 
-  inputTensor.dispose();
   prediction.dispose();
 
   return {
@@ -49,10 +51,6 @@ export function predictPrice(
   };
 }
 
-/**
- * Calculates confidence based on whether a value is within the training range
- * Returns a value between 0.5 and 1.0
- */
 function calculateRangeConfidence(
   value: number,
   min: number,

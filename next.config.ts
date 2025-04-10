@@ -5,9 +5,19 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     serverActions: {
-      bodySizeLimit: "2mb", // Adjust size limit as needed
-      allowedOrigins: ["*"], // Configure allowed origins
+      bodySizeLimit: "2mb",
+      allowedOrigins: ["*"],
     },
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
+    return config;
   },
 };
 

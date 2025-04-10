@@ -1,4 +1,4 @@
-import * as tf from "@tensorflow/tfjs-node";
+import type * as tfTypes from "@tensorflow/tfjs";
 import {
   TrainingDataItem,
   NormalizedFeatures,
@@ -56,6 +56,9 @@ export function normalizeFeatures(
  * Normalizes a single value to [0,1] range
  */
 function normalize(value: number, min: number, max: number): number {
+  if (max === min) {
+    return 0;
+  }
   return (value - min) / (max - min);
 }
 
@@ -75,9 +78,10 @@ export function denormalizePrice(
  * Prepares tensor data for training from normalized features
  */
 export function prepareTensorData(
+  tf: typeof tfTypes,
   data: TrainingDataItem[],
   params: NormalizationParams,
-): { xs: tf.Tensor2D; ys: tf.Tensor2D } {
+): { xs: tfTypes.Tensor2D; ys: tfTypes.Tensor2D } {
   const normalizedFeatures = data.map((item) => {
     const normalized = normalizeFeatures(item, params);
     return [normalized.squareFootage, normalized.bedrooms];

@@ -1,4 +1,4 @@
-import * as tf from "@tensorflow/tfjs-node";
+import type * as tfTypes from "@tensorflow/tfjs";
 
 /**
  * Creates and compiles a neural network model for housing price prediction
@@ -9,7 +9,7 @@ import * as tf from "@tensorflow/tfjs-node";
  * - Hidden Layer 2: 4 units, ReLU activation
  * - Output: 1 unit (price prediction)
  */
-export function createModel(): tf.LayersModel {
+export function createModel(tf: typeof tfTypes): tfTypes.LayersModel {
   const model = tf.sequential();
 
   // First hidden layer
