@@ -4,8 +4,11 @@ import mlService from "@/services/ml/mlService";
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log("Starting database seed...");
+
   // Clear existing training data
   await prisma.trainingData.deleteMany({});
+  console.log("Cleared existing training data");
 
   const trainingData = [
     { squareFootage: 800, bedrooms: 2, price: 150000 },
@@ -18,8 +21,6 @@ async function main() {
     { squareFootage: 2600, bedrooms: 5, price: 400000 },
   ];
 
-  console.log(`Start seeding training data...`);
-
   for (const data of trainingData) {
     const record = await prisma.trainingData.create({
       data,
@@ -27,7 +28,7 @@ async function main() {
     console.log(`Created training record with ID: ${record.id}`);
   }
 
-  console.log(`Training data seeding completed.`);
+  console.log("Database seeding completed successfully");
 
   // Train the model with the seeded data
   console.log("Training ML model...");

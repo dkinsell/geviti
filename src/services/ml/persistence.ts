@@ -11,11 +11,14 @@ let modelJsonPath: string;
 let paramsPathOrKey: string;
 
 const tfInstancePromise: Promise<typeof tfBrowser> = (async () => {
-  if (IS_SERVER && !IS_VERCEL) {
+  if (IS_SERVER) {
     try {
-      const tfNode = await import("@tensorflow/tfjs-node");
+      const tfNode = IS_VERCEL
+        ? tfBrowser
+        : await import("@tensorflow/tfjs-node");
+
       const baseDir = IS_VERCEL
-        ? "/tmp"
+        ? "/tmp/model"
         : path.join(process.cwd(), "public", "model");
 
       modelDirPath = `file://${baseDir}`;
@@ -27,49 +30,24 @@ const tfInstancePromise: Promise<typeof tfBrowser> = (async () => {
         console.log(`Created directory: ${baseDir}`);
       }
 
-      console.log("Using tfjs-node in development server");
       console.log(
-        `Persistence (Server): Using model DIR path (for save): ${modelDirPath}`,
+        `Using ${IS_VERCEL ? "tfjs" : "tfjs-node"} in ${IS_VERCEL ? "Vercel" : "development"}`,
       );
-      console.log(
-        `Persistence (Server): Using model JSON path (for load): ${modelJsonPath}`,
-      );
-      console.log(
-        `Persistence (Server): Using params path/key: ${paramsPathOrKey}`,
-      );
+      console.log(`Model DIR path (for save): ${modelDirPath}`);
+      console.log(`Model JSON path (for load): ${modelJsonPath}`);
+      console.log(`Params path: ${paramsPathOrKey}`);
 
-      return tfNode as unknown as typeof tfBrowser;
+      return IS_VERCEL ? tfBrowser : (tfNode as unknown as typeof tfBrowser);
     } catch (e) {
-      console.error("Failed to load tfjs-node:", e);
+      console.error("Failed to load TensorFlow:", e);
       throw e;
     }
   } else {
-    try {
-      if (IS_SERVER) {
-        await import("@tensorflow/tfjs-backend-cpu");
-        console.log("Using tfjs with CPU backend on Vercel");
-      } else {
-        await import("@tensorflow/tfjs-backend-webgl");
-        await import("@tensorflow/tfjs-backend-cpu");
-        console.log("Using tfjs with WebGL/CPU backends in browser");
-      }
-
-      modelDirPath = "indexeddb://housing-price-model";
-      modelJsonPath = "indexeddb://housing-price-model";
-      paramsPathOrKey = "housing-model-params";
-
-      console.log(
-        `Persistence (Browser/Vercel): Using model path: ${modelJsonPath}`,
-      );
-      console.log(
-        `Persistence (Browser/Vercel): Using params path/key: ${paramsPathOrKey}`,
-      );
-
-      return tfBrowser;
-    } catch (e) {
-      console.error("Failed to load tfjs backends:", e);
-      throw e;
-    }
+    modelDirPath = "indexeddb://housing-price-model";
+    modelJsonPath = "indexeddb://housing-price-model";
+    paramsPathOrKey = "housing-model-params";
+    console.log("Using tfjs in browser");
+    return tfBrowser;
   }
 })();
 
