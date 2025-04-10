@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@tensorflow/tfjs-node"],
+  // Only include tfjs-node as external in development
+  serverExternalPackages: process.env.VERCEL ? [] : ["@tensorflow/tfjs-node"],
   output: "standalone",
   experimental: {
     serverActions: {
@@ -10,6 +11,7 @@ const nextConfig: NextConfig = {
     },
   },
   webpack: (config, { isServer }) => {
+    // For browser builds
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -17,6 +19,15 @@ const nextConfig: NextConfig = {
         path: false,
       };
     }
+
+    // For Vercel deployment, use tfjs instead of tfjs-node
+    if (isServer && process.env.VERCEL) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@tensorflow/tfjs-node": "@tensorflow/tfjs",
+      };
+    }
+
     return config;
   },
 };
