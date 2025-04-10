@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import mlService from "@/services/ml/mlService";
+import mlService from "../src/services/ml/mlService";
 
 const prisma = new PrismaClient();
 
