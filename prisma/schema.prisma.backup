@@ -1,34 +1,28 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
+// Keep the same models but with SQLite-compatible types
 model TrainingData {
   id            Int      @id @default(autoincrement())
   squareFootage Int
   bedrooms      Int
-  price         Decimal  @db.Decimal(10, 2)  // More precise for money values
+  price         Float    // SQLite doesn't support Decimal
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  @@index([createdAt])  // Add index for better query performance
 }
 
 model PredictionLog {
   id            Int      @id @default(autoincrement())
   squareFootage Int
   bedrooms      Int
-  predictedPrice Decimal  @db.Decimal(10, 2)
-  confidence    Decimal?  @db.Decimal(5, 4)  // More precise for confidence scores
+  predictedPrice Float
+  confidence    Float?
   createdAt     DateTime @default(now())
-  ipAddress     String?  @db.VarChar(45)     // Proper length for IPv6
-
-  @@index([createdAt])
+  ipAddress     String?
 }

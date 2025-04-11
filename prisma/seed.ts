@@ -2,9 +2,12 @@ import { PrismaClient } from "@prisma/client";
 import mlService from "../src/services/ml/mlService";
 
 const prisma = new PrismaClient();
+const isProd = process.env.NODE_ENV === "production";
 
 async function main() {
-  console.log("Starting database seed...");
+  console.log(
+    `Starting database seed in ${isProd ? "production" : "development"} mode...`,
+  );
 
   // Clear existing training data
   await prisma.trainingData.deleteMany({});
@@ -28,19 +31,25 @@ async function main() {
     console.log(`Created training record with ID: ${record.id}`);
   }
 
-  console.log("Database seeding completed successfully");
+  console.log(
+    `Database seeding completed successfully on ${isProd ? "Neon PostgreSQL" : "SQLite"}`,
+  );
 
-  // Train the model with the seeded data
-  console.log("Training ML model...");
-  try {
-    await mlService.trainNewModel();
-    console.log("ML model training completed successfully.");
-  } catch (error) {
-    console.error("Error training ML model:", error);
-    throw error; // Ensure deployment fails if model training fails
+  // Only train model in production or if explicitly requested
+  if (isProd || process.env.FORCE_TRAIN === "true") {
+    console.log("Training ML model...");
+    try {
+      await mlService.trainNewModel();
+      console.log("ML model training completed successfully");
+    } catch (error) {
+      console.error("Error training ML model:", error);
+      throw error;
+    }
   }
 
-  console.log(`Seeding and model training completed successfully.`);
+  console.log(
+    `Seeding${isProd ? " and model training" : ""} completed successfully`,
+  );
 }
 
 main()

@@ -16,7 +16,9 @@
     "postinstall": "prisma generate",
     "pre-build-train": "ts-node --project tsconfig.scripts.json scripts/preBuildTrain.ts",
     "db:dev": "NODE_ENV=development ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && prisma generate && prisma db push",
-    "db:prod": "NODE_ENV=production ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && dotenv -e .env.production -- prisma generate && dotenv -e .env.production -- prisma db push"
+    "db:prod": "NODE_ENV=production ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && dotenv -e .env.production -- prisma generate && dotenv -e .env.production -- prisma db push",
+    "seed:prod": "NODE_ENV=production dotenv -e .env.production -- prisma db seed",
+    "seed:dev": "NODE_ENV=development dotenv -e .env.local -- prisma db seed"
   },
   "prisma": {
     "seed": "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts"
