@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { predictionInputSchema } from "@/lib/validations/predictionSchema";
-import mlService from "@/services/ml/mlService";
 import { ZodError } from "zod";
+import mlService from "@/services/ml/mlService";
+import { predictionInputSchema } from "@/lib/validations/predictionSchema";
 
 export async function POST(request: Request) {
   try {
@@ -9,34 +9,42 @@ export async function POST(request: Request) {
     const validatedData = predictionInputSchema.parse(body);
 
     console.log("API: Processing prediction request for:", validatedData);
+    // Ensure ML service is initialized before predicting
+    await mlService.initialize();
     const prediction = await mlService.predict(validatedData);
     console.log("API: Prediction successful:", prediction);
 
     return NextResponse.json(prediction);
   } catch (error) {
-    console.error("API: Prediction error:", error);
+    // Log the full error object for detailed debugging
+    console.error("API Predict Error:", error);
+
+    let statusCode = 500;
+    let errorCode = "PREDICTION_ERROR";
+    let message = "Failed to process prediction";
+    let details: unknown =
+      error instanceof Error ? error.message : "Unknown error";
 
     if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          code: "VALIDATION_ERROR",
-          message: "Invalid input data",
-          details: error.errors,
-        },
-        { status: 400 },
-      );
+      statusCode = 400;
+      errorCode = "VALIDATION_ERROR";
+      message = "Invalid input data";
+      details = error.errors;
+    } else if (error instanceof Error) {
+      // Capture specific ML service errors if needed
+      if (error.message.includes("Model initialization failed")) {
+        errorCode = "ML_INIT_ERROR";
+        message = "Machine learning service failed to initialize.";
+      }
     }
 
-    // Add more specific error handling
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       {
-        code: "PREDICTION_ERROR",
-        message: "Failed to process prediction",
-        details: errorMessage,
+        code: errorCode,
+        message: message,
+        details: details,
       },
-      { status: 500 },
+      { status: statusCode },
     );
   }
 }
