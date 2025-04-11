@@ -6,7 +6,7 @@ import { head, put } from "@vercel/blob";
 import type { io } from "@tensorflow/tfjs-core";
 
 const IS_SERVER = typeof window === "undefined";
-const IS_VERCEL = IS_SERVER && process.env.VERCEL === "1";
+export const IS_VERCEL = IS_SERVER && process.env.VERCEL === "1";
 
 const MODEL_JSON_BLOB_NAME = "model.json";
 const MODEL_WEIGHTS_BLOB_NAME = "model.weights.bin";
