@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import mlService from "@/services/ml/mlService";
-import { predictionInputSchema } from "@/lib/validations/predictionSchema";
+import mlService from "../../../services/ml/mlService";
+import { predictionInputSchema } from "../../../lib/validations/predictionSchema";
 
 export async function POST(request: Request) {
   try {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 console.log("API Predictions: Imports loaded (NextResponse)");
-import prisma from "@/lib/db";
-console.log("API Predictions: Imports loaded (prisma)");
+import prisma from "../../../lib/db";
+console.log("API Predictions: Imports loaded (prisma - relative)");
 import fs from "fs";
 console.log("API Predictions: Imports loaded (fs)");
 
