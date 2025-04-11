@@ -18,7 +18,12 @@
     "db:dev": "NODE_ENV=development ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && prisma generate && prisma db push",
     "db:prod": "NODE_ENV=production ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && dotenv -e .env.production -- prisma generate && dotenv -e .env.production -- prisma db push",
     "seed:prod": "NODE_ENV=production dotenv -e .env.production -- prisma db seed",
-    "seed:dev": "NODE_ENV=development dotenv -e .env.local -- prisma db seed"
+    "seed:dev": "NODE_ENV=development dotenv -e .env.local -- prisma db seed",
+    "dev:fresh": "npm run db:dev && npm run seed:dev && npm run dev",
+    "dev:reset": "rm -f prisma/dev.db && npm run dev:fresh",
+    "prod:reset": "npm run db:prod && npm run seed:prod",
+    "type-check": "tsc --noEmit",
+    "validate": "npm run type-check && npm run lint && npm run build"
   },
   "prisma": {
     "seed": "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts"
