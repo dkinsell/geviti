@@ -11,6 +11,7 @@ import { loadModel, saveModel } from "./persistence";
 import { predictPrice } from "./predictor";
 
 const IS_SERVER = typeof window === "undefined";
+const IS_VERCEL = IS_SERVER && process.env.VERCEL === "1"; // Define IS_VERCEL here
 
 const tfInstancePromise: Promise<typeof tfBrowser> = (async () => {
   if (IS_SERVER) {
@@ -240,7 +241,11 @@ class MLService {
       hasModel: !!this.model,
       hasParams: !!this.normalizationParams,
       backend: tf.getBackend(),
-      modelPath: process.env.ML_MODEL_PATH,
+      modelStorageLocation: IS_SERVER
+        ? IS_VERCEL // Now defined
+          ? "Vercel Blob"
+          : "Local Filesystem"
+        : "Browser IndexedDB/LocalStorage",
     };
   }
 
