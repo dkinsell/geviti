@@ -23,7 +23,10 @@
     "dev:reset": "rm -f prisma/dev.db && npm run dev:fresh",
     "prod:reset": "npm run db:prod && npm run seed:prod",
     "type-check": "tsc --noEmit",
-    "validate": "npm run type-check && npm run lint && npm run build"
+    "validate": "npm run type-check && npm run lint && npm run build",
+    "start:prod": "NODE_ENV=production dotenv -e .env.production npm start",
+    "build:prod": "NODE_ENV=production dotenv -e .env.production npm run build",
+    "prod:test": "npm run prod:reset && npm run build:prod && npm run start:prod"
   },
   "prisma": {
     "seed": "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts"
