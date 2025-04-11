@@ -6,7 +6,6 @@
   "outputDirectory": ".next",
   "regions": ["iad1"],
   "env": {
-    "DATABASE_URL": "@database_url",
     "ML_MODEL_PATH": "file:/tmp/model/model.json",
     "VERCEL": "1"
   }
