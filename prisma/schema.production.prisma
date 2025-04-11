@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TrainingData {
+  id            Int      @id @default(autoincrement())
+  squareFootage Int
+  bedrooms      Int
+  price         Decimal  @db.Decimal(10, 2)  // More precise for money values
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createdAt])  // Add index for better query performance
+}
+
+model PredictionLog {
+  id            Int      @id @default(autoincrement())
+  squareFootage Int
+  bedrooms      Int
+  predictedPrice Decimal  @db.Decimal(10, 2)
+  confidence    Decimal?  @db.Decimal(5, 4)  // More precise for confidence scores
+  createdAt     DateTime @default(now())
+  ipAddress     String?  @db.VarChar(45)     // Proper length for IPv6
+
+  @@index([createdAt])
+}

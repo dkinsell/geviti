@@ -4,15 +4,14 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
     "outDir": "dist",
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "target": "ES2017"
   },
   "ts-node": {
-    "require": ["tsconfig-paths/register"]
+    "transpileOnly": true,
+    "files": true
   },
   "include": ["scripts/**/*"]
 }

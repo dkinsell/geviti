@@ -12,9 +12,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "vercel-build": "mkdir -p /tmp/model && prisma generate && prisma db push && prisma db seed && npm run pre-build-train && npm run build",
+    "vercel-build": "npm run db:prod && mkdir -p /tmp/model && prisma db seed && npm run pre-build-train && npm run build",
     "postinstall": "prisma generate",
-    "pre-build-train": "ts-node --project tsconfig.scripts.json scripts/preBuildTrain.ts"
+    "pre-build-train": "ts-node --project tsconfig.scripts.json scripts/preBuildTrain.ts",
+    "db:dev": "NODE_ENV=development ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && prisma generate && prisma db push",
+    "db:prod": "NODE_ENV=production ts-node --project tsconfig.scripts.json scripts/switchDbSchema.ts && dotenv -e .env.production -- prisma generate && dotenv -e .env.production -- prisma db push"
   },
   "prisma": {
     "seed": "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts"
@@ -37,6 +39,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.72.1",
+    "@tensorflow/tfjs-node": "^4.22.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -44,6 +47,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "eslint-config-prettier": "10.1.1",
@@ -55,8 +59,7 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5",
-    "@tensorflow/tfjs-node": "^4.22.0",
-    "tsconfig-paths": "^4.2.0"
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5"
   }
 }
