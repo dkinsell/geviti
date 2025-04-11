@@ -3,6 +3,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PredictionLog } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { formatCurrency } from "@/lib/formatCurrency";
 import {
   RefreshCw,
@@ -12,6 +13,12 @@ import {
   Loader2,
   BedDouble,
 } from "lucide-react";
+
+function decimalToNumber(decimal: Prisma.Decimal | number | null): number {
+  if (decimal === null) return 0;
+  if (typeof decimal === "number") return decimal;
+  return parseFloat(decimal.toString());
+}
 
 /**
  * Fetches the prediction history from the API.
@@ -94,19 +101,19 @@ export default function PredictionHistory() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-800 text-lg">
-                      {formatCurrency(log.predictedPrice)}
+                      {formatCurrency(decimalToNumber(log.predictedPrice))}
                     </span>
                     <span
                       className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${
-                        confidenceValue >= 0.85
+                        decimalToNumber(confidenceValue) >= 0.85
                           ? "bg-green-100 text-green-700"
-                          : confidenceValue >= 0.7
+                          : decimalToNumber(confidenceValue) >= 0.7
                             ? "bg-yellow-100 text-yellow-700"
                             : "bg-orange-100 text-orange-700"
                       }`}
                     >
                       <BarChart2 className="w-3 h-3" />
-                      {(confidenceValue * 100).toFixed(0)}%
+                      {(decimalToNumber(confidenceValue) * 100).toFixed(0)}%
                     </span>
                   </div>
                   <div className="text-xs text-gray-600 flex items-center gap-2">

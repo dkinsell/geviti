@@ -15,8 +15,13 @@ async function preBuildTrain() {
       throw new Error("No training data available for pre-build training");
     }
 
-    console.log(`Training model with ${trainingData.length} data points...`);
-    const result = await trainModel(tf, trainingData as TrainingDataItem[], {
+    const transformedData = trainingData.map((item) => ({
+      ...item,
+      price: Number(item.price),
+    }));
+
+    console.log(`Training model with ${transformedData.length} data points...`);
+    const result = await trainModel(tf, transformedData as TrainingDataItem[], {
       epochs: 200,
       batchSize: 4,
     });
