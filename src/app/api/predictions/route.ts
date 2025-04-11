@@ -1,21 +1,33 @@
 import { NextResponse } from "next/server";
+console.log("API Predictions: Imports loaded (NextResponse)");
 import prisma from "@/lib/db";
+console.log("API Predictions: Imports loaded (prisma)");
 import fs from "fs";
+console.log("API Predictions: Imports loaded (fs)");
 
 export async function GET() {
-  const dbPath = process.env.DATABASE_URL?.replace("file:", "");
+  console.log("API Predictions: GET request started.");
+  let dbPath: string | undefined;
 
   try {
+    console.log("API Predictions: Inside try block.");
+    dbPath = process.env.DATABASE_URL?.replace("file:", "");
+    console.log(`API Predictions: Calculated dbPath: ${dbPath}`);
+
     console.log(
       `API Predictions: Runtime DATABASE_URL: ${process.env.DATABASE_URL}`,
     );
+
     if (dbPath) {
+      console.log("API Predictions: Checking database existence...");
       const dbExists = fs.existsSync(dbPath);
       console.log(
         `API Predictions: Database file at ${dbPath} exists: ${dbExists}`,
       );
       if (!dbExists) {
-        // Log directory contents if file doesn't exist
+        console.log(
+          "API Predictions: Database file not found. Reading /tmp...",
+        );
         try {
           const tmpContents = fs.readdirSync("/tmp");
           console.log(
@@ -35,18 +47,18 @@ export async function GET() {
       );
     }
 
-    console.log("API: Fetching prediction history...");
+    console.log("API Predictions: Attempting to fetch prediction history..."); // Log before prisma call
     const predictions = await prisma.predictionLog.findMany({
       orderBy: {
         createdAt: "desc",
       },
-      take: 10, // Limit to the last 10 predictions
+      take: 10,
     });
-    console.log(`API: Found ${predictions.length} predictions.`);
+    console.log(`API Predictions: Found ${predictions.length} predictions.`);
     return NextResponse.json(predictions);
   } catch (error) {
     console.error("API Predictions Error:", error);
-    console.error(`API Predictions Error Context: DB Path: ${dbPath}`);
+    console.error(`API Predictions Error Context: DB Path used: ${dbPath}`);
 
     return NextResponse.json(
       {
