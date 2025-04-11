@@ -24,7 +24,6 @@ const tfInstancePromise: Promise<typeof tfBrowser> = (async () => {
     }
   } else {
     try {
-      // Dynamically import browser backends
       await import("@tensorflow/tfjs-backend-webgl");
       await import("@tensorflow/tfjs-backend-cpu");
       console.log("MLService: Loaded browser TFJS backends (WebGL, CPU)");
@@ -151,37 +150,44 @@ class MLService {
   }
 
   async predict(input: PredictionInput): Promise<PredictionResult> {
-    if (!this.isInitialized || !this.model || !this.normalizationParams) {
-      console.log("MLService: Not initialized. Attempting initialization...");
-      await this.initialize();
+    try {
       if (!this.isInitialized || !this.model || !this.normalizationParams) {
-        console.error(
-          "MLService: Prediction failed - initialization failed or model/params still null.",
-        );
-        throw new Error("Model not available for prediction.");
+        console.log("MLService: Not initialized. Attempting initialization...");
+        await this.initialize();
+        if (!this.isInitialized || !this.model || !this.normalizationParams) {
+          throw new Error("Model initialization failed");
+        }
+        console.log("MLService: Initialization complete after check.");
       }
-      console.log("MLService: Initialization complete after check.");
-    }
 
-    this.validateInput(input);
-    const tf = await this.tfInstancePromise;
+      this.validateInput(input);
+      const tf = await this.tfInstancePromise;
 
-    const result = predictPrice(
-      tf,
-      this.model!,
-      input,
-      this.normalizationParams!,
-    );
-
-    if (IS_SERVER) {
-      await this.logPrediction(input, result);
-    } else {
-      console.log(
-        "MLService: Prediction made in browser, skipping server-side logging.",
+      console.log("MLService: Making prediction with input:", input);
+      const result = predictPrice(
+        tf,
+        this.model!,
+        input,
+        this.normalizationParams!,
       );
-    }
+      console.log("MLService: Prediction result:", result);
 
-    return result;
+      if (IS_SERVER) {
+        await this.logPrediction(input, result);
+      }
+
+      return result;
+    } catch (error) {
+      console.error("MLService: Prediction error details:", {
+        error,
+        modelState: {
+          isInitialized: this.isInitialized,
+          hasModel: !!this.model,
+          hasParams: !!this.normalizationParams,
+        },
+      });
+      throw error;
+    }
   }
 
   private validateInput(input: PredictionInput): void {
@@ -225,6 +231,17 @@ class MLService {
     } catch (error) {
       console.error("Error logging prediction:", error);
     }
+  }
+
+  async getStatus() {
+    const tf = await this.tfInstancePromise;
+    return {
+      isInitialized: this.isInitialized,
+      hasModel: !!this.model,
+      hasParams: !!this.normalizationParams,
+      backend: tf.getBackend(),
+      modelPath: process.env.ML_MODEL_PATH,
+    };
   }
 
   private static instance: MLService | null = null;

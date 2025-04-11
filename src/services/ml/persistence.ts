@@ -18,17 +18,26 @@ const tfInstancePromise: Promise<typeof tfBrowser> = (async () => {
         : await import("@tensorflow/tfjs-node");
 
       const baseDir = IS_VERCEL
-        ? "/tmp/model"
+        ? path.join("/tmp", "model")
         : path.join(process.cwd(), "public", "model");
+
+      if (IS_SERVER && !fs.existsSync(baseDir)) {
+        try {
+          fs.mkdirSync(baseDir, { recursive: true });
+          console.log(`Created model directory: ${baseDir}`);
+          const testFile = path.join(baseDir, "test.txt");
+          fs.writeFileSync(testFile, "test");
+          fs.unlinkSync(testFile);
+          console.log("Verified write permissions in model directory");
+        } catch (error) {
+          console.error("Error setting up model directory:", error);
+          throw error;
+        }
+      }
 
       modelDirPath = `file://${baseDir}`;
       modelJsonPath = `file://${path.join(baseDir, "model.json")}`;
       paramsPathOrKey = path.join(baseDir, "normalization.json");
-
-      if (!fs.existsSync(baseDir)) {
-        fs.mkdirSync(baseDir, { recursive: true });
-        console.log(`Created directory: ${baseDir}`);
-      }
 
       console.log(
         `Using ${IS_VERCEL ? "tfjs" : "tfjs-node"} in ${IS_VERCEL ? "Vercel" : "development"}`,
